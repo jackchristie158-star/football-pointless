@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Pointless Football Quiz</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+::selection { background: #c9a227; color: #08080f; }
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  background: #08080f;
+  color: #e0e0e0;
+  min-height: 100vh;
+  padding: 20px 16px 48px;
+}
+#app { max-width: 640px; margin: 0 auto; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulseGlow { 0%,100% { box-shadow: 0 0 8px rgba(201,162,39,0.2); } 50% { box-shadow: 0 0 20px rgba(201,162,39,0.4); } }
+@keyframes slideBar { from { width: 0; } }
+
+.header { text-align: center; margin-bottom: 32px; position: relative; }
+.header-sub { color: #778899; font-size: 12px; letter-spacing: 5px; text-transform: uppercase; margin: 0; }
+.header-title { color: #c9a227; font-size: 46px; font-weight: bold; margin: 2px 0; letter-spacing: 3px; text-shadow: 0 0 40px rgba(201,162,39,0.25); }
+.header-tag { color: #778899; font-size: 11px; letter-spacing: 4px; margin: 0; }
+.round-badge { position: absolute; top: 0; right: 0; background: #1a1a2e; border: 1px solid #252535; border-radius: 8px; padding: 6px 14px; color: #c9a227; font-size: 13px; }
+
+.card { background: #111118; border: 1px solid #252535; border-radius: 12px; padding: 20px 22px; margin-bottom: 16px; animation: fadeIn 0.3s ease-out; }
+.card-gold { border-color: #c9a227; }
+
+.label { color: #778899; font-size: 12px; margin-bottom: 8px; display: block; letter-spacing: 2px; text-transform: uppercase; }
+
+input[type="text"] {
+  width: 100%; padding: 11px 14px; background: #0c0c14; border: 1px solid #252535;
+  border-radius: 8px; color: #e0e0e0; font-family: Georgia, serif; font-size: 15px;
+  outline: none; box-sizing: border-box; transition: border-color 0.2s;
+}
+input[type="text"]:focus { border-color: #c9a227; }
+
+.btn {
+  padding: 12px 28px; background: #c9a227; color: #08080f; border: none; border-radius: 8px;
+  font-family: Georgia, serif; font-size: 15px; font-weight: bold; cursor: pointer;
+  letter-spacing: 1px; transition: opacity 0.2s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-big { padding: 15px 52px; font-size: 17px; }
+.btn-outline {
+  padding: 9px 18px; background: transparent; color: #c9a227; border: 1px solid #c9a227;
+  border-radius: 8px; font-family: Georgia, serif; font-size: 13px; cursor: pointer;
+}
+.btn-outline:hover { background: rgba(201,162,39,0.1); }
+.btn-round { padding: 9px 18px; border-radius: 8px; font-family: Georgia, serif; font-size: 14px; cursor: pointer; border: 1px solid #c9a227; background: transparent; color: #c9a227; flex: 1; }
+.btn-round.active { background: #c9a227; color: #08080f; font-weight: bold; }
+.btn-remove { padding: 4px 10px; background: transparent; color: #555; border: 1px solid #333; border-radius: 6px; cursor: pointer; font-size: 12px; }
+
+.player-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+.player-num { color: #c9a227; font-size: 14px; min-width: 22px; }
+.player-name { color: #c9a227; font-size: 13px; margin-bottom: 5px; }
+
+.round-select { display: flex; gap: 8px; }
+
+.center { text-align: center; }
+.mt12 { margin-top: 12px; }
+.mt16 { margin-top: 16px; }
+.mt24 { margin-top: 24px; }
+.mb10 { margin-bottom: 10px; }
+.mb12 { margin-bottom: 12px; }
+
+.category { color: #c9a227; font-size: 11px; letter-spacing: 3px; margin-bottom: 10px; text-transform: uppercase; }
+.question-text { font-size: 18px; line-height: 1.55; color: #e8e8e8; }
+
+.spinner { display: flex; align-items: center; gap: 14px; padding: 28px 0; justify-content: center; }
+.spinner-circle { width: 28px; height: 28px; border: 3px solid #252535; border-top: 3px solid #c9a227; border-radius: 50%; animation: spin 0.8s linear infinite; }
+.spinner-text { color: #c9a227; font-style: italic; font-size: 15px; }
+
+.error-box { background: #1a0000; border: 1px solid #4a0000; border-radius: 8px; padding: 14px; margin-bottom: 16px; color: #ff6b6b; font-size: 12px; font-family: monospace; word-break: break-all; white-space: pre-wrap; }
+
+.result-row { padding: 14px 0; }
+.result-row + .result-row { border-top: 1px solid #1a1a2e; }
+.result-header { display: flex; justify-content: space-between; align-items: center; }
+.result-player { color: #c9a227; font-weight: bold; }
+.result-answer { color: #778899; margin-left: 10px; }
+.result-score-wrap { display: flex; align-items: center; gap: 8px; }
+.result-score { font-size: 24px; font-weight: bold; }
+.result-reason { color: #778899; font-size: 12px; margin-top: 5px; }
+
+.score-bar { width: 100%; height: 8px; background: #1a1a2e; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+.score-bar-fill { height: 100%; border-radius: 4px; animation: slideBar 0.8s ease-out; }
+
+.badge { padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; letter-spacing: 1px; }
+.badge-pointless { background: #00e676; color: #000; }
+.badge-wrong { background: #dc3545; color: #fff; }
+.badge-unsure { background: #ff9800; color: #000; }
+
+.top5-row { padding: 8px 0; display: flex; justify-content: space-between; align-items: center; }
+.top5-row + .top5-row { border-top: 1px solid #1a1a2e; }
+.top5-name { color: #00e676; font-weight: bold; }
+.top5-reason { color: #555; font-size: 12px; margin-left: 10px; }
+.top5-score { color: #00e676; font-size: 11px; font-weight: bold; white-space: nowrap; margin-left: 8px; }
+
+.lb-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; }
+.lb-row + .lb-row { border-top: 1px solid #1a1a2e; }
+.lb-medal { margin-right: 10px; font-size: 17px; }
+.lb-total { color: #c9a227; font-weight: bold; font-size: 19px; }
+
+.winner-card { text-align: center; border-color: #c9a227; padding: 36px; animation: fadeIn 0.5s ease-out, pulseGlow 2s ease-in-out infinite; }
+.winner-trophy { font-size: 52px; margin-bottom: 10px; }
+.winner-name { color: #c9a227; font-size: 26px; font-weight: bold; margin-bottom: 4px; }
+.winner-label { color: #778899; font-size: 13px; letter-spacing: 3px; }
+.winner-score { color: #00e676; font-size: 36px; font-weight: bold; margin-top: 10px; }
+
+.final-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; }
+.final-row + .final-row { border-top: 1px solid #1a1a2e; }
+.final-medal { margin-right: 12px; font-size: 20px; }
+.final-name { font-size: 17px; }
+.final-total { color: #c9a227; font-weight: bold; font-size: 21px; }
+
+.footer { text-align: center; margin-top: 32px; color: #333; font-size: 11px; }
+
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <p class="header-sub">The Football Quiz</p>
+    <h1 class="header-title">POINTLESS</h1>
+    <p class="header-tag">LOWEST SCORE WINS</p>
+    <div id="roundBadge" class="round-badge hidden"></div>
+  </div>
+  <div id="errorBox" class="error-box hidden"></div>
+  <div id="content"></div>
+</div>
+
+<script>
+/* ─── State ─── */
+let playerNames = [""];
+let numRounds = 5;
+let currentRound = 0;
+let scores = {};
+let question = null;
+let category = "";
+let answers = {};
+let roundResults = null;
+let usedQuestions = [];
+let usedTemplates = [];
+const medals = ["🥇", "🥈", "🥉"];
+
+/* ─── Helpers ─── */
+function grabJSON(str) {
+  const s = str.indexOf("{"), e = str.lastIndexOf("}");
+  if (s === -1 || e === -1) throw new Error("No JSON found: " + str.slice(0, 400));
+  return JSON.parse(str.slice(s, e + 1));
+}
+function sanitize(s) { return s.replace(/[^\x20-\x7E]/g, "").replace(/['"\\`]/g, "").trim(); }
+function escapeHTML(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+async function callClaude(prompt, maxTokens) {
+  const res = await fetch("/api/claude", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: maxTokens || 1024, messages: [{ role: "user", content: prompt }] })
+  });
+  const raw = await res.text();
+  let data;
+  try { data = JSON.parse(raw); } catch { throw new Error("Non-JSON: " + raw.slice(0, 400)); }
+  if (data.error) throw new Error("API: " + (data.error.message || JSON.stringify(data.error)));
+  return data.content[0].text;
+}
+
+function showError(msg) { const el = document.getElementById("errorBox"); el.textContent = msg; el.classList.remove("hidden"); }
+function hideError() { document.getElementById("errorBox").classList.add("hidden"); }
+function showRoundBadge(text) { const el = document.getElementById("roundBadge"); el.textContent = text; el.classList.remove("hidden"); }
+function hideRoundBadge() { document.getElementById("roundBadge").classList.add("hidden"); }
+
+function scoreColor(s) {
+  if (s === 100) return "#dc3545";
+  if (s === 50) return "#ff9800";
+  if (s === 0) return "#00e676";
+  if (s <= 20) return "#4caf50";
+  if (s <= 50) return "#ff9800";
+  if (s <= 80) return "#f44336";
+  return "#dc3545";
+}
+function scoreTextColor(s) {
+  if (s === 0) return "#00e676";
+  if (s === 100) return "#dc3545";
+  if (s === 50) return "#ff9800";
+  if (s <= 30) return "#4caf50";
+  return "#e0e0e0";
+}
+
+function getLeaderboard() {
+  return Object.entries(scores).sort((a, b) => a[1] - b[1]);
+}
+
+/* ─── Club Pools ─── */
+// Big 6 — appear most frequently (weighted by repetition in pools)
+const BIG6 = [
+  "Manchester United", "Manchester City", "Arsenal", "Chelsea", "Liverpool", "Tottenham Hotspur"
+];
+
+// Regular PL clubs — solid PL presence since 2012
+const PL_REGULARS = [
+  "Everton", "Leicester City", "West Ham United", "Aston Villa", "Newcastle United",
+  "Southampton", "Crystal Palace", "Wolverhampton Wanderers", "Brighton & Hove Albion",
+  "Fulham", "Brentford", "Nottingham Forest", "Leeds United", "West Bromwich Albion",
+  "Stoke City", "Swansea City", "Cardiff City", "Hull City", "Burnley", "Watford",
+  "Huddersfield Town", "Bournemouth", "Norwich City", "Middlesbrough", "Sheffield United",
+  "Luton Town", "Queens Park Rangers", "Blackburn Rovers", "Bolton Wanderers", "Wigan Athletic",
+  "Reading", "Sunderland", "Blackpool"
+];
+
+// Rare — clubs not in PL since before 2008, used sparingly
+const PL_RARE = [
+  "Charlton Athletic", "Ipswich Town", "Derby County", "Coventry City",
+  "Bradford City", "Wimbledon", "Sheffield Wednesday"
+];
+
+// All clubs combined with Big 6 weighted heavier (appear 3x)
+const ALL_CLUBS = [...BIG6, ...BIG6, ...BIG6, ...PL_REGULARS, ...PL_REGULARS, ...PL_RARE];
+
+// For rivalry pairs
+const DERBIES = [
+  ["Arsenal", "Tottenham Hotspur"],
+  ["Manchester United", "Manchester City"],
+  ["Liverpool", "Everton"],
+  ["Chelsea", "Arsenal"],
+  ["Liverpool", "Manchester United"],
+  ["Newcastle United", "Sunderland"],
+  ["Aston Villa", "Birmingham City"],
+  ["West Ham United", "Millwall"],
+  ["Leeds United", "Manchester United"],
+  ["Leicester City", "Nottingham Forest"],
+  ["Wolverhampton Wanderers", "Aston Villa"],
+  ["Chelsea", "Tottenham Hotspur"],
+  ["Manchester City", "Liverpool"]
+];
+
+function pickClub() { return ALL_CLUBS[Math.floor(Math.random() * ALL_CLUBS.length)]; }
+function pickDerby() { return DERBIES[Math.floor(Math.random() * DERBIES.length)]; }
+function pickBig6() { return BIG6[Math.floor(Math.random() * BIG6.length)]; }
+
+/* ─── Templates ─── */
+// Templates are strings — {CLUB}, {CLUB_A}, {CLUB_B} get substituted client-side before sending
+const TEMPLATES = [
+  // --- General / Milestones ---
+  "Name a player who has played for at least {N} different Premier League clubs (pick N from 4,5,6)",
+  "Name a player who has scored {N}+ Premier League goals (pick N from 50,75,100,150)",
+  "Name a player who has scored {N}+ goals AND {M}+ assists in the Premier League (pick realistic thresholds)",
+  "Name a player who has been sent off {N}+ times in the Premier League (pick N from 5,6,7,8)",
+  "Name a player who has kept {N}+ Premier League clean sheets (pick N from 50,75,100)",
+  "Name a player who has made {N}+ Premier League appearances (pick N from 300,400,500)",
+  "Name a player who has won the Premier League with two different clubs",
+  "Name a player aged 35 or older who scored a Premier League goal",
+  "Name a player who has both scored and been sent off in the same Premier League match",
+  "Name a player who has taken {N}+ Premier League penalties (pick N from 10,15,20)",
+  "Name a player who transferred directly between two top-6 Premier League clubs",
+  "Name a player who won both the Premier League and FA Cup in the same season",
+  "Name a player who has scored with their head {N}+ times in the Premier League (pick N from 15,20,25)",
+  "Name a player relegated from the Premier League with {N}+ different clubs (pick N from 2,3)",
+  "Name a player who has won the Premier League Golden Boot",
+  "Name a player who has won the Premier League Player of the Season award",
+  "Name a player who has assisted {N}+ Premier League goals (pick N from 50,75,100)",
+  "Name a substitute who scored {N}+ Premier League goals coming off the bench (pick N from 10,15,20)",
+  "Name a player who scored on the final day of a Premier League season to affect the title race or relegation",
+  "Name a player who has scored in {N}+ consecutive Premier League matches (pick N from 5,6,7,8)",
+  "Name a player who has scored {N}+ own goals in the Premier League (pick N from 3,4,5)",
+
+  // --- Position-specific ---
+  "Name a defender who has scored {N}+ Premier League goals (pick N from 15,20,25,30)",
+  "Name a goalkeeper who has scored or assisted a Premier League goal",
+  "Name a midfielder who has scored {N}+ Premier League goals (pick N from 40,50,60,70)",
+  "Name a goalkeeper who has kept {N}+ Premier League clean sheets for a single club (pick N from 50,75,100)",
+  "Name a centre-back who scored a Premier League goal for {BIG6_CLUB}",
+  "Name a full-back who scored {N}+ Premier League goals (pick N from 20,30,40)",
+  "Name a striker who has scored {N}+ Premier League goals for a single club (pick N from 50,75,100)",
+
+  // --- Club-specific (Big 6 weighted) ---
+  "Name a player who has scored a Premier League hat-trick for {BIG6_CLUB}",
+  "Name a player who scored on their Premier League debut for {BIG6_CLUB}",
+  "Name a player who scored on the opening day of a Premier League season for {BIG6_CLUB}",
+  "Name a player who has scored a Premier League free kick for {BIG6_CLUB}",
+  "Name a South American player who played for {BIG6_CLUB} in the Premier League",
+  "Name a player who appeared for {BIG6_CLUB} in the Premier League and also played in a World Cup final",
+  "Name a player who scored a 90th-minute winner in the Premier League for {BIG6_CLUB}",
+  "Name a player who scored in a title-winning season for {BIG6_CLUB} but made fewer than 10 league appearances",
+  "Name a player who was the top scorer for {BIG6_CLUB} in a single Premier League season",
+  "Name a player who played for {BIG6_CLUB} in the Premier League and later managed a Premier League club",
+  "Name a player signed by {BIG6_CLUB} for over 30 million pounds who never scored a Premier League goal for them",
+  "Name a player in a Premier League title-winning squad who made fewer than 15 appearances that season",
+
+  // --- Club-specific (any PL club) ---
+  "Name a player who has scored a Premier League hat-trick for {CLUB}",
+  "Name a player who scored on their Premier League debut for {CLUB}",
+  "Name a player who has scored a Premier League free kick for {CLUB}",
+  "Name a South American player who played for {CLUB} in the Premier League",
+  "Name a player who played for {CLUB} in their first ever Premier League season (a promoted club)",
+  "Name a player who scored a 90th-minute winner in the Premier League for {CLUB}",
+  "Name a player who was ever-present (played every league game) for {CLUB} in a Premier League season",
+  "Name a player who has scored for {CLUB} in a Premier League relegation season",
+  "Name a player signed by {CLUB} from outside England who became a cult hero at the club",
+  "Name a player who scored their 100th Premier League goal while at {CLUB}",
+
+  // --- Derbies ---
+  "Name a player who has scored in the North London derby (Arsenal vs Tottenham)",
+  "Name a player who has scored in the Manchester derby (Man Utd vs Man City)",
+  "Name a player who scored in a Premier League derby between {DERBY_A} and {DERBY_B}",
+  "Name a player who has scored in the Merseyside derby (Liverpool vs Everton)",
+  "Name a player who has scored in the derby between {DERBY_A} and {DERBY_B} for both clubs",
+  "Name a player who scored on their debut in a Premier League derby",
+
+  // --- Nationality ---
+  "Name a non-English player who has captained a Premier League club",
+  "Name an African player who has scored {N}+ Premier League goals (pick N from 20,30,50)",
+  "Name a Scandinavian player who has played in the Premier League",
+  "Name a French player who has scored {N}+ Premier League goals (pick N from 20,30,50)",
+  "Name a player from {COUNTRY} who has played in the Premier League (pick a less obvious country — not England, France, Spain, Brazil, Germany, Argentina)",
+  "Name a Spanish player who has played for a Premier League club other than the Big 6",
+  "Name a player born in Africa who has won the Premier League",
+  "Name a player from the Middle East or North Africa who has played in the Premier League",
+  "Name an Asian player (East or South-East Asia) who has played in the Premier League",
+  "Name a player from an African nation who scored {N}+ Premier League goals (pick N from 10,20,30)",
+  "Name a German player who has played in the Premier League",
+  "Name a Dutch player who has played for {BIG6_CLUB} in the Premier League",
+  "Name a Brazilian player who has played for {BIG6_CLUB} in the Premier League",
+  "Name a player who played for their national team at a World Cup AND a Premier League club in the same calendar year",
+
+  // --- Cross-club / transfers ---
+  "Name a player who has scored in the Premier League for both {CLUB} and {CLUB_B} (pick two clubs from different cities)",
+  "Name a player who has scored in the Premier League for both {BIG6_CLUB} and {BIG6_CLUB_B} (pick two Big 6 clubs)",
+  "Name a player who played for {BIG6_CLUB} and then joined a relegated Premier League club",
+  "Name a player who was relegated with one club and won the Premier League with another",
+  "Name a player who has played Premier League football for clubs in {N}+ different cities (pick N from 4,5)",
+  "Name a player who joined a Premier League club on a free transfer and scored {N}+ goals for them (pick N from 15,20,30)",
+
+  // --- Management ---
+  "Name a manager who has managed {N}+ different Premier League clubs (pick N from 3,4,5)",
+  "Name a player who scored {N}+ Premier League goals and later managed a Premier League club (pick N from 50,100)",
+  "Name a manager who won the Premier League with a club that had never won it before",
+
+  // --- Season / era specific ---
+  "Name a player who scored a Premier League goal as a teenager (under 20)",
+  "Name a player who scored {N}+ Premier League goals in a single season (pick N from 20,25,30)",
+  "Name a player who has scored a Premier League goal at {N}+ different grounds (pick N from 20,25,30)",
+  "Name a player signed by a Premier League club for over 30 million pounds before 2015",
+  "Name a player who scored on the opening day of a Premier League season for {CLUB}",
+  "Name a player who has won the Premier League Player of the Month award {N}+ times (pick N from 3,4,5)",
+  "Name a player who scored in a Premier League play-off final to earn promotion",
+];
+
+/* ─── Template substitution ─── */
+function fillTemplate(t) {
+  const derby = pickDerby();
+  const clubA = pickClub();
+  let clubB = pickClub();
+  while (clubB === clubA) clubB = pickClub();
+  const big6A = pickBig6();
+  let big6B = pickBig6();
+  while (big6B === big6A) big6B = pickBig6();
+
+  return t
+    .replace(/{BIG6_CLUB_B}/g, big6B)
+    .replace(/{BIG6_CLUB}/g, big6A)
+    .replace(/{DERBY_A}/g, derby[0])
+    .replace(/{DERBY_B}/g, derby[1])
+    .replace(/{CLUB_B}/g, clubB)
+    .replace(/{CLUB_A}/g, clubA)
+    .replace(/{CLUB}/g, clubA);
+}
+
+/* ─── Render Functions ─── */
+function render(html) { document.getElementById("content").innerHTML = html; }
+
+function renderSetup() {
+  hideRoundBadge();
+  hideError();
+  let playersHTML = "";
+  playerNames.forEach((name, i) => {
+    playersHTML += `<div class="player-row">
+      <span class="player-num">${i+1}.</span>
+      <input type="text" id="p${i}" value="${escapeHTML(name)}" placeholder="Player ${i+1}" onkeydown="setupKeydown(event,${i})">
+      ${playerNames.length > 1 ? `<button class="btn-remove" onclick="removePlayer(${i})">✕</button>` : ""}
+    </div>`;
+  });
+
+  let roundsHTML = [3,5,7,10].map(n =>
+    `<button class="btn-round ${numRounds===n?'active':''}" onclick="setRounds(${n})">${n}</button>`
+  ).join("");
+
+  render(`
+    <div class="card">
+      <label class="label">Players</label>
+      ${playersHTML}
+      ${playerNames.length < 6 ? `<button class="btn-outline" style="margin-top:4px;font-size:12px" onclick="addPlayer()">+ Add Player</button>` : ""}
+    </div>
+    <div class="card">
+      <label class="label">Rounds</label>
+      <div class="round-select">${roundsHTML}</div>
+    </div>
+    <div class="center mt24">
+      <button class="btn btn-big" onclick="startGame()">START GAME</button>
+    </div>
+  `);
+}
+
+function renderSpinner(msg) {
+  render(`<div class="spinner"><div class="spinner-circle"></div><span class="spinner-text">${escapeHTML(msg)}</span></div>`);
+}
+
+function renderQuestion() {
+  let inputsHTML = playerNames.map((name, i) => `
+    <div class="mb12">
+      <div class="player-name">${escapeHTML(name)}</div>
+      <input type="text" id="ans${i}" placeholder="Type your answer..." onkeydown="answerKeydown(event,${i})">
+    </div>
+  `).join("");
+
+  render(`
+    <div class="card card-gold">
+      <div class="category">${escapeHTML(category)}</div>
+      <div class="question-text">${escapeHTML(question)}</div>
+    </div>
+    <div class="card">
+      <label class="label">Your Answers</label>
+      ${inputsHTML}
+      <div class="center mt12">
+        <button class="btn" onclick="submitAnswers()">SUBMIT ANSWERS</button>
+      </div>
+    </div>
+  `);
+}
+
+function renderResults() {
+  let scoresHTML = roundResults.scores.map((s, i) => {
+    let badge = "";
+    if (s.score === 0) badge = `<span class="badge badge-pointless">POINTLESS!</span>`;
+    else if (s.score === 100) badge = `<span class="badge badge-wrong">WRONG</span>`;
+    else if (s.score === 50) badge = `<span class="badge badge-unsure">UNSURE</span>`;
+    return `<div class="result-row">
+      <div class="result-header">
+        <div><span class="result-player">${escapeHTML(s.player)}</span><span class="result-answer">"${escapeHTML(s.answer)}"</span></div>
+        <div class="result-score-wrap">
+          <span class="result-score" style="color:${scoreTextColor(s.score)}">${s.score}</span>
+          ${badge}
+        </div>
+      </div>
+      <div class="result-reason">${escapeHTML(s.reason)}</div>
+      <div class="score-bar"><div class="score-bar-fill" style="width:${Math.max(s.score,2)}%;background:${scoreColor(s.score)}"></div></div>
+    </div>`;
+  }).join("");
+
+  let top5HTML = "";
+  if (roundResults.top5 && roundResults.top5.length > 0) {
+    top5HTML = `<div class="card"><label class="label">Pointless Answers You Could Have Given</label>` +
+      roundResults.top5.map(t => `<div class="top5-row">
+        <div style="flex:1"><span class="top5-name">${escapeHTML(t.answer)}</span><span class="top5-reason">${escapeHTML(t.reason)}</span></div>
+        <span class="top5-score">0–15</span>
+      </div>`).join("") + `</div>`;
+  }
+
+  const lb = getLeaderboard();
+  let lbHTML = lb.map(([name, total], i) => `
+    <div class="lb-row">
+      <div><span class="lb-medal">${i < 3 ? medals[i] : (i+1)+"."}</span><span style="color:${i===0?"#c9a227":"#e0e0e0"}">${escapeHTML(name)}</span></div>
+      <span class="lb-total">${total}</span>
+    </div>
+  `).join("");
+
+  const btnText = currentRound >= numRounds ? "SEE FINAL RESULTS" : "NEXT ROUND →";
+
+  render(`
+    <div class="card"><label class="label">Round ${currentRound} Results</label>${scoresHTML}</div>
+    ${top5HTML}
+    <div class="card"><label class="label">Leaderboard</label>${lbHTML}</div>
+    <div class="center mt16"><button class="btn" onclick="nextRound()">${btnText}</button></div>
+  `);
+}
+
+function renderEnd() {
+  hideRoundBadge();
+  const lb = getLeaderboard();
+
+  let finalHTML = lb.map(([name, total], i) => `
+    <div class="final-row">
+      <div><span class="final-medal">${i < 3 ? medals[i] : (i+1)+"."}</span><span class="final-name" style="color:${i===0?"#c9a227":"#e0e0e0"};font-weight:${i===0?"bold":"normal"}">${escapeHTML(name)}</span></div>
+      <span class="final-total">${total}</span>
+    </div>
+  `).join("");
+
+  render(`
+    <div class="card winner-card">
+      <div class="winner-trophy">🏆</div>
+      <div class="winner-name">${escapeHTML(lb[0][0])}</div>
+      <div class="winner-label">POINTLESS CHAMPION</div>
+      <div class="winner-score">${lb[0][1]} pts</div>
+    </div>
+    <div class="card"><label class="label">Final Standings</label>${finalHTML}</div>
+    <div class="center mt24"><button class="btn btn-big" onclick="playAgain()">PLAY AGAIN</button></div>
+  `);
+}
+
+/* ─── Actions ─── */
+function syncPlayerInputs() {
+  playerNames = playerNames.map((_, i) => {
+    const el = document.getElementById("p" + i);
+    return el ? el.value : playerNames[i];
+  });
+}
+
+function addPlayer() {
+  syncPlayerInputs();
+  if (playerNames.length < 6) playerNames.push("");
+  renderSetup();
+  document.getElementById("p" + (playerNames.length - 1)).focus();
+}
+
+function removePlayer(i) {
+  syncPlayerInputs();
+  if (playerNames.length > 1) playerNames.splice(i, 1);
+  renderSetup();
+}
+
+function setRounds(n) {
+  syncPlayerInputs();
+  numRounds = n;
+  renderSetup();
+}
+
+function setupKeydown(e, i) {
+  if (e.key === "Enter") {
+    syncPlayerInputs();
+    if (playerNames.length < 6) addPlayer();
+  }
+}
+
+function answerKeydown(e, i) {
+  if (e.key === "Enter") {
+    if (i + 1 < playerNames.length) {
+      document.getElementById("ans" + (i + 1)).focus();
+    } else {
+      submitAnswers();
+    }
+  }
+}
+
+function startGame() {
+  syncPlayerInputs();
+  const names = playerNames.map(n => sanitize(n)).filter(n => n.length > 0);
+  if (names.length === 0) return;
+  playerNames = names;
+  scores = {};
+  names.forEach(n => scores[n] = 0);
+  currentRound = 0;
+  usedQuestions = [];
+  usedTemplates = [];
+  generateQuestion();
+}
+
+async function generateQuestion() {
+  hideError();
+  roundResults = null;
+  answers = {};
+  showRoundBadge("Round " + (currentRound + 1) + " / " + numRounds);
+  renderSpinner("Generating question...");
+
+  const avail = TEMPLATES.filter(t => !usedTemplates.includes(t));
+  const pool = avail.length >= 3 ? avail : TEMPLATES;
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  const picks = shuffled.slice(0, 3).map(fillTemplate);
+
+  const avoid = usedQuestions.length > 0
+    ? "Do NOT repeat or closely rephrase these previous questions: " + usedQuestions.slice(-6).join(" | ") + ". "
+    : "";
+
+  const prompt = `You are a Premier League football quiz writer for the TV show Pointless. Pick ONE of these templates and fill in ALL remaining blanks to create a specific, answerable question:
+
+1) ${picks[0]}
+2) ${picks[1]}
+3) ${picks[2]}
+
+${avoid}Rules:
+- Premier League era only (1992-present)
+- The question MUST have at least 8-15 valid correct answers so players have a fair chance
+- State exact criteria with zero ambiguity
+- Fill in ALL remaining {placeholders} with specific numbers, clubs, countries
+- Make it fun and interesting for football fans
+
+Reply ONLY JSON: {"question":"...","category":"short 2-3 word label"}`;
+
+  try {
+    const text = await callClaude(prompt, 1024);
+    const parsed = grabJSON(text);
+    question = parsed.question;
+    category = parsed.category || "Premier League";
+    usedQuestions.push(question);
+    usedTemplates.push(shuffled[0]);
+    renderQuestion();
+  } catch (e) {
+    showError(e.message);
+    renderQuestion();
+  }
+}
+
+async function submitAnswers() {
+  const playerAnswers = playerNames.map((name, i) => {
+    const el = document.getElementById("ans" + i);
+    return { player: sanitize(name), answer: sanitize(el ? el.value : "") };
+  });
+  if (playerAnswers.some(p => !p.answer)) return;
+
+  hideError();
+  renderSpinner("Scoring answers...");
+
+  const answersStr = playerAnswers.map(p => p.player + ": " + p.answer).join(", ");
+
+  const prompt = `You are scoring a Pointless Premier League Quiz. Use your football knowledge carefully.
+
+QUESTION: "${sanitize(question)}"
+ANSWERS TO SCORE: ${answersStr}
+
+SCORING INSTRUCTIONS — follow these steps for EACH answer:
+
+STEP 1 — IDENTIFY: Work out who the player likely means. Players may misspell names (e.g. "Semenyo" for Antoine Semenyo, "Bruun Larsen" for Jacob Bruun Larsen, "De Bryne" for De Bruyne). Use your knowledge to identify the most likely real footballer intended. Do NOT penalise spelling.
+
+STEP 2 — VERIFY: Once you have identified the player, carefully check whether they GENUINELY meet the question criteria. Be factually precise:
+- Nationality: Use the player's actual international nationality (e.g. Riyad Mahrez is ALGERIAN not French; Mo Salah is EGYPTIAN; Wilfried Zaha is IVORIAN). Do NOT guess or confuse nationalities.
+- Club history: Only confirm a player played for a club if you are confident they did in the Premier League era.
+- Stats: Only confirm goals/appearances/records if you are reasonably confident. Do NOT fabricate stats.
+
+STEP 3 — SCORE:
+- If the player DOES meet the criteria → score 0–99 based on how well-known they are (see scale below)
+- If you are GENUINELY UNSURE whether they meet the criteria → score 50 and explain the uncertainty
+- If you are CONFIDENT they do NOT meet the criteria → score 100 (WRONG)
+- Err on the side of giving benefit of the doubt for obscure but plausible answers — a false wrong is worse than a generous correct
+
+SCORE SCALE (for correct answers only):
+0 = POINTLESS: correct but virtually nobody would name them (reserve players, forgotten one-season wonders)
+1–20 = Very obscure: only hardcore PL fans know them
+21–50 = Cult hero / fringe: dedicated fans know, casuals probably don't
+51–80 = Well known: regular PL watchers would name them
+81–99 = Famous household names — these players MUST score 85–99: Shearer, Henry, Rooney, Lampard, Gerrard, Salah, Kane, De Bruyne, Ronaldo, Beckham, Haaland, Aguero, Cantona, Bergkamp, Scholes, Giggs, Tevez, Drogba, Terry, Cole (Ashley), Ferdinand, Vidic, Van Persie, Suarez
+
+Also provide 5 genuinely obscure correct answers (scoring 0–15) that satisfy the question — real players, factually accurate.
+
+IMPORTANT NATIONALITY REMINDER: Always use actual international nationality. North African players (Algerian, Moroccan, Tunisian, Egyptian) are NOT French. Brazilian/Argentine players are South American. Do not confuse place of birth with nationality.
+
+Reply ONLY with this exact JSON (no extra text):
+{"scores":[{"player":"","answer":"","identified_as":"full correct name if different from answer","score":0,"reason":""}],"top5":[{"answer":"","reason":""}]}`;
+
+  try {
+    const text = await callClaude(prompt, 1500);
+    const parsed = grabJSON(text);
+    parsed.scores.forEach(s => {
+      if (scores[s.player] !== undefined) scores[s.player] += s.score;
+    });
+    roundResults = parsed;
+    currentRound++;
+    showRoundBadge("Round " + currentRound + " / " + numRounds);
+    renderResults();
+  } catch (e) {
+    showError(e.message);
+    renderQuestion();
+  }
+}
+
+function nextRound() {
+  if (currentRound >= numRounds) {
+    renderEnd();
+  } else {
+    generateQuestion();
+  }
+}
+
+function playAgain() {
+  playerNames = [""];
+  numRounds = 5;
+  currentRound = 0;
+  scores = {};
+  question = null;
+  roundResults = null;
+  usedQuestions = [];
+  usedTemplates = [];
+  hideError();
+  renderSetup();
+}
+
+/* ─── Init ─── */
+renderSetup();
+</script>
+</body>
+</html>
