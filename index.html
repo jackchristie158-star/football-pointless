@@ -375,7 +375,7 @@ function renderResults() {
 
   let top5HTML = "";
   if (roundResults.top5 && roundResults.top5.length > 0) {
-    top5HTML = `<div class="card"><label class="label">Pointless Answers You Could Have Given</label>` +
+    top5HTML = `<div class="card"><label class="label">Pointless Answers You Could Have Given</label><div style="color:#444;font-size:11px;font-style:italic;margin-bottom:10px;">&#9888; Suggestions are unverified — treat as a guide only</div>` +
       roundResults.top5.map(t => `<div class="top5-row">
         <div style="flex:1"><span class="top5-name">${escapeHTML(t.answer)}</span><span class="top5-reason">${escapeHTML(t.reason)}</span></div>
         <span class="top5-score">0–10</span>
