@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Pointless Football Quiz</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+::selection { background: #c9a227; color: #000; }
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  background: #000000;
+  color: #e0e0e0;
+  min-height: 100vh;
+  padding: 20px 16px 48px;
+}
+#app { max-width: 640px; margin: 0 auto; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulseGlow { 0%,100% { box-shadow: 0 0 8px rgba(201,162,39,0.2); } 50% { box-shadow: 0 0 20px rgba(201,162,39,0.5); } }
+@keyframes slideBar { from { width: 0; } }
+
+.header { text-align: center; margin-bottom: 32px; position: relative; }
+.header-sub { color: #555; font-size: 12px; letter-spacing: 5px; text-transform: uppercase; margin: 0; }
+.header-title { color: #c9a227; font-size: 46px; font-weight: bold; margin: 2px 0; letter-spacing: 3px; text-shadow: 0 0 40px rgba(201,162,39,0.3); }
+.header-tag { color: #555; font-size: 11px; letter-spacing: 4px; margin: 0; }
+.round-badge { position: absolute; top: 0; right: 0; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 6px 14px; color: #c9a227; font-size: 13px; }
+
+.card { background: #111111; border: 1px solid #2a2a2a; border-radius: 12px; padding: 20px 22px; margin-bottom: 16px; animation: fadeIn 0.3s ease-out; }
+.card-gold { border-color: #c9a227; }
+
+.label { color: #555; font-size: 12px; margin-bottom: 8px; display: block; letter-spacing: 2px; text-transform: uppercase; }
+
+input[type="text"] {
+  width: 100%; padding: 11px 14px; background: #0a0a0a; border: 1px solid #2a2a2a;
+  border-radius: 8px; color: #e0e0e0; font-family: Georgia, serif; font-size: 15px;
+  outline: none; box-sizing: border-box; transition: border-color 0.2s;
+}
+input[type="text"]:focus { border-color: #c9a227; }
+
+.btn {
+  padding: 12px 28px; background: #c9a227; color: #000; border: none; border-radius: 8px;
+  font-family: Georgia, serif; font-size: 15px; font-weight: bold; cursor: pointer;
+  letter-spacing: 1px; transition: opacity 0.2s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-big { padding: 15px 52px; font-size: 17px; }
+.btn-outline {
+  padding: 9px 18px; background: transparent; color: #c9a227; border: 1px solid #c9a227;
+  border-radius: 8px; font-family: Georgia, serif; font-size: 13px; cursor: pointer;
+}
+.btn-outline:hover { background: rgba(201,162,39,0.1); }
+.btn-round { padding: 9px 18px; border-radius: 8px; font-family: Georgia, serif; font-size: 14px; cursor: pointer; border: 1px solid #2a2a2a; background: transparent; color: #888; flex: 1; transition: all 0.15s; }
+.btn-round:hover { border-color: #c9a227; color: #c9a227; }
+.btn-round.active { background: #c9a227; color: #000; font-weight: bold; border-color: #c9a227; }
+.btn-remove { padding: 4px 10px; background: transparent; color: #444; border: 1px solid #2a2a2a; border-radius: 6px; cursor: pointer; font-size: 12px; }
+
+.player-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+.player-num { color: #c9a227; font-size: 14px; min-width: 22px; }
+.player-name { color: #c9a227; font-size: 13px; margin-bottom: 5px; }
+
+.round-select { display: flex; gap: 8px; }
+.diff-select { display: flex; gap: 8px; }
+.diff-desc { color: #555; font-size: 11px; margin-top: 8px; font-style: italic; }
+
+.center { text-align: center; }
+.mt12 { margin-top: 12px; }
+.mt16 { margin-top: 16px; }
+.mt24 { margin-top: 24px; }
+.mb12 { margin-bottom: 12px; }
+
+.category { color: #c9a227; font-size: 11px; letter-spacing: 3px; margin-bottom: 10px; text-transform: uppercase; }
+.question-text { font-size: 18px; line-height: 1.55; color: #e8e8e8; }
+.difficulty-tag { display: inline-block; font-size: 10px; letter-spacing: 2px; padding: 2px 8px; border-radius: 6px; margin-bottom: 10px; font-weight: bold; }
+.diff-tag-easy { background: rgba(76,175,80,0.1); color: #4caf50; border: 1px solid rgba(76,175,80,0.2); }
+.diff-tag-medium { background: rgba(201,162,39,0.1); color: #c9a227; border: 1px solid rgba(201,162,39,0.2); }
+.diff-tag-hard { background: rgba(220,53,69,0.1); color: #dc3545; border: 1px solid rgba(220,53,69,0.2); }
+
+.spinner { display: flex; align-items: center; gap: 14px; padding: 28px 0; justify-content: center; }
+.spinner-circle { width: 28px; height: 28px; border: 3px solid #2a2a2a; border-top: 3px solid #c9a227; border-radius: 50%; animation: spin 0.8s linear infinite; }
+.spinner-text { color: #c9a227; font-style: italic; font-size: 15px; }
+
+.error-box { background: #110000; border: 1px solid #3a0000; border-radius: 8px; padding: 14px; margin-bottom: 16px; color: #ff6b6b; font-size: 12px; font-family: monospace; word-break: break-all; white-space: pre-wrap; }
+
+.result-row { padding: 14px 0; }
+.result-row + .result-row { border-top: 1px solid #1a1a1a; }
+.result-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; }
+.result-player { color: #c9a227; font-weight: bold; }
+.result-answer { color: #555; margin-left: 10px; }
+.result-identified { color: #444; font-size: 11px; margin-left: 6px; font-style: italic; }
+.result-score-wrap { display: flex; align-items: center; gap: 8px; }
+.result-score { font-size: 24px; font-weight: bold; }
+.result-reason { color: #555; font-size: 12px; margin-top: 4px; }
+.result-verified { font-size: 11px; margin-top: 2px; }
+.verified-api { color: #4caf50; }
+.verified-claude { color: #444; }
+
+.score-bar { width: 100%; height: 6px; background: #1a1a1a; border-radius: 3px; overflow: hidden; margin-top: 8px; }
+.score-bar-fill { height: 100%; border-radius: 3px; animation: slideBar 0.8s ease-out; }
+
+.badge { padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; letter-spacing: 1px; }
+.badge-pointless { background: #00e676; color: #000; }
+.badge-wrong { background: #dc3545; color: #fff; }
+
+.top5-row { padding: 8px 0; display: flex; justify-content: space-between; align-items: center; }
+.top5-row + .top5-row { border-top: 1px solid #1a1a1a; }
+.top5-name { color: #00e676; font-weight: bold; }
+.top5-reason { color: #444; font-size: 12px; margin-left: 10px; }
+.top5-score { color: #00e676; font-size: 11px; font-weight: bold; white-space: nowrap; margin-left: 8px; }
+
+.lb-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; }
+.lb-row + .lb-row { border-top: 1px solid #1a1a1a; }
+.lb-medal { margin-right: 10px; font-size: 17px; }
+.lb-total { color: #c9a227; font-weight: bold; font-size: 19px; }
+
+.winner-card { text-align: center; border-color: #c9a227; padding: 36px; animation: fadeIn 0.5s ease-out, pulseGlow 2s ease-in-out infinite; }
+.winner-trophy { font-size: 52px; margin-bottom: 10px; }
+.winner-name { color: #c9a227; font-size: 26px; font-weight: bold; margin-bottom: 4px; }
+.winner-label { color: #555; font-size: 13px; letter-spacing: 3px; }
+.winner-score { color: #00e676; font-size: 36px; font-weight: bold; margin-top: 10px; }
+
+.final-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; }
+.final-row + .final-row { border-top: 1px solid #1a1a1a; }
+.final-medal { margin-right: 12px; font-size: 20px; }
+.final-name { font-size: 17px; }
+.final-total { color: #c9a227; font-weight: bold; font-size: 21px; }
+
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <p class="header-sub">The Football Quiz</p>
+    <h1 class="header-title">POINTLESS</h1>
+    <p class="header-tag">LOWEST SCORE WINS</p>
+    <div id="roundBadge" class="round-badge hidden"></div>
+  </div>
+  <div id="errorBox" class="error-box hidden"></div>
+  <div id="content"></div>
+</div>
+
+<script>
+/* ─── State ─── */
+let playerNames = [""];
+let numRounds = 5;
+let difficulty = "medium";
+let currentRound = 0;
+let scores = {};
+let question = null;
+let questionMeta = {};
+let questionCategory = "";
+let lastQuestionType = "";
+let roundResults = null;
+let usedQuestions = [];
+const medals = ["🥇","🥈","🥉"];
+
+/* ─── Helpers ─── */
+function grabJSON(str) {
+  const s = str.indexOf("{"), e = str.lastIndexOf("}");
+  if (s === -1 || e === -1) throw new Error("No JSON found: " + str.slice(0, 300));
+  return JSON.parse(str.slice(s, e + 1));
+}
+function sanitize(s) { return s.replace(/[^\x20-\x7E]/g,"").replace(/['"\\`]/g,"").trim(); }
+function escapeHTML(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function pickUnique(arr, exclude) {
+  let v, n = 0;
+  do { v = pick(arr); n++; } while (v === exclude && arr.length > 1 && n < 20);
+  return v;
+}
+
+async function callClaude(prompt, maxTokens) {
+  const res = await fetch("/api/claude", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: maxTokens || 1024, messages: [{ role: "user", content: prompt }] })
+  });
+  const raw = await res.text();
+  let data;
+  try { data = JSON.parse(raw); } catch { throw new Error("Non-JSON: " + raw.slice(0, 200)); }
+  if (data.error) throw new Error("API: " + (data.error.message || JSON.stringify(data.error)));
+  if (Array.isArray(data.content)) return data.content.filter(b => b.type === "text").map(b => b.text).join("");
+  return data.content[0].text;
+}
+
+async function callValidate(payload) {
+  const res = await fetch("/api/validate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return await res.json();
+}
+
+function showError(msg) { const el = document.getElementById("errorBox"); el.textContent = msg; el.classList.remove("hidden"); }
+function hideError() { document.getElementById("errorBox").classList.add("hidden"); }
+function showRoundBadge(text) { const el = document.getElementById("roundBadge"); el.textContent = text; el.classList.remove("hidden"); }
+function hideRoundBadge() { document.getElementById("roundBadge").classList.add("hidden"); }
+
+function scoreColor(s) {
+  if (s === 100) return "#dc3545";
+  if (s === 0) return "#00e676";
+  if (s <= 20) return "#4caf50";
+  if (s <= 50) return "#ff9800";
+  if (s <= 80) return "#f44336";
+  return "#dc3545";
+}
+function scoreTextColor(s) {
+  if (s === 0) return "#00e676";
+  if (s === 100) return "#dc3545";
+  if (s <= 30) return "#4caf50";
+  return "#e0e0e0";
+}
+function getLeaderboard() { return Object.entries(scores).sort((a,b) => a[1]-b[1]); }
+
+/* ─── Data Pools ─── */
+const BIG6 = ["Manchester United","Manchester City","Arsenal","Chelsea","Liverpool","Tottenham Hotspur"];
+const PL_CLUBS = [
+  ...Array(3).fill(BIG6).flat(),
+  ...Array(2).fill([
+    "Everton","Leicester City","West Ham United","Aston Villa","Newcastle United",
+    "Southampton","Crystal Palace","Wolverhampton Wanderers","Brighton & Hove Albion",
+    "Fulham","Brentford","Nottingham Forest","Leeds United","West Bromwich Albion",
+    "Stoke City","Swansea City","Cardiff City","Hull City","Burnley","Watford",
+    "Huddersfield Town","Bournemouth","Norwich City","Middlesbrough","Sheffield United",
+    "Luton Town","Queens Park Rangers","Blackburn Rovers","Bolton Wanderers","Wigan Athletic",
+    "Sunderland","Blackpool","Reading"
+  ]).flat()
+];
+
+const SEASONS = [
+  "2010/11","2011/12","2012/13","2013/14","2014/15",
+  "2015/16","2016/17","2017/18","2018/19","2019/20",
+  "2020/21","2021/22","2022/23","2023/24"
+];
+
+const NATIONALITIES = [
+  "French","Spanish","German","Brazilian","Dutch","Portuguese","Italian","Belgian",
+  "Argentinian","Algerian","Ivorian","Senegalese","Ghanaian","Nigerian",
+  "Croatian","Serbian","Norwegian","Swedish","Danish","Scottish","Welsh","Irish",
+  "Colombian","Chilean","Uruguayan","Moroccan","Egyptian","Cameroonian"
+];
+
+/* ─── Difficulty Config ─── */
+const DIFF_CONFIG = {
+  easy:   { label:"Easy",   desc:"Casual fans — popular clubs and well-known players",         goalSeason:[15,20],    goalClub:[12,15,20],  instruction:"Use well-known clubs and seasons. 15-30 valid answers." },
+  medium: { label:"Medium", desc:"Regular watchers — mix of obvious and obscure answers",      goalSeason:[10,12,15], goalClub:[8,10,12],   instruction:"Mix of famous and obscure. 10-20 valid answers." },
+  hard:   { label:"Hard",   desc:"Football nerds — tough thresholds, obscure answers expected", goalSeason:[8,10],     goalClub:[6,8,10],    instruction:"Tight thresholds, less obvious clubs. 5-12 valid answers." }
+};
+
+const TYPES = ["squad","clubscorers","topscorers","nationality"];
+
+function buildQuestion() {
+  const cfg = DIFF_CONFIG[difficulty];
+  const season = pick(SEASONS);
+  const club = pick(PL_CLUBS);
+  const club2 = pickUnique(PL_CLUBS, club);
+  const nationality = pick(NATIONALITIES);
+  const goalSeason = pick(cfg.goalSeason);
+  const goalClub = pick(cfg.goalClub);
+
+  const availTypes = TYPES.filter(t => t !== lastQuestionType);
+  const type = pick(availTypes.length ? availTypes : TYPES);
+
+  let template = "", meta = { type, season };
+
+  if (type === "squad") {
+    const twoClub = Math.random() < 0.3;
+    if (twoClub) {
+      template = `Name a player who appeared for both ${club} and ${club2} in the Premier League (any season from 2010/11 onwards)`;
+      meta = { type: "squad_two_clubs", club, club2 };
+    } else {
+      template = `Name a player who appeared for ${club} in the Premier League during the ${season} season`;
+      meta.club = club;
+    }
+  } else if (type === "clubscorers") {
+    template = `Name a player who scored ${goalClub}+ Premier League goals for ${club} in the ${season} season`;
+    meta.club = club;
+    meta.minGoals = goalClub;
+  } else if (type === "topscorers") {
+    template = `Name a player who scored ${goalSeason}+ Premier League goals in the ${season} season`;
+    meta.minGoals = goalSeason;
+  } else if (type === "nationality") {
+    template = `Name a ${nationality} player who has played in the Premier League`;
+    meta = { type: "nationality", nationality };
+  }
+
+  return { template, meta };
+}
+
+/* ─── Render ─── */
+function render(html) { document.getElementById("content").innerHTML = html; }
+
+function renderSetup() {
+  hideRoundBadge(); hideError();
+  let playersHTML = "";
+  playerNames.forEach((name, i) => {
+    playersHTML += `<div class="player-row">
+      <span class="player-num">${i+1}.</span>
+      <input type="text" id="p${i}" value="${escapeHTML(name)}" placeholder="Player ${i+1}" onkeydown="setupKeydown(event,${i})">
+      ${playerNames.length > 1 ? `<button class="btn-remove" onclick="removePlayer(${i})">✕</button>` : ""}
+    </div>`;
+  });
+  const roundsHTML = [3,5,7,10].map(n => `<button class="btn-round ${numRounds===n?"active":""}" onclick="setRounds(${n})">${n}</button>`).join("");
+  const diffHTML = ["easy","medium","hard"].map(d => `<button class="btn-round ${difficulty===d?"active":""}" onclick="setDifficulty('${d}')">${d.charAt(0).toUpperCase()+d.slice(1)}</button>`).join("");
+  render(`
+    <div class="card">
+      <label class="label">Players</label>
+      ${playersHTML}
+      ${playerNames.length < 6 ? `<button class="btn-outline" style="margin-top:6px;font-size:12px" onclick="addPlayer()">+ Add Player</button>` : ""}
+    </div>
+    <div class="card">
+      <label class="label">Rounds</label>
+      <div class="round-select">${roundsHTML}</div>
+    </div>
+    <div class="card">
+      <label class="label">Difficulty</label>
+      <div class="diff-select">${diffHTML}</div>
+      <div class="diff-desc">${DIFF_CONFIG[difficulty].desc}</div>
+    </div>
+    <div class="center mt24"><button class="btn btn-big" onclick="startGame()">START GAME</button></div>
+  `);
+}
+
+function renderSpinner(msg) {
+  render(`<div class="spinner"><div class="spinner-circle"></div><span class="spinner-text">${escapeHTML(msg)}</span></div>`);
+}
+
+function renderQuestion() {
+  const diffTag = `<span class="difficulty-tag diff-tag-${difficulty}">${difficulty.toUpperCase()}</span>`;
+  const inputsHTML = playerNames.map((name, i) => `
+    <div class="mb12">
+      <div class="player-name">${escapeHTML(name)}</div>
+      <input type="text" id="ans${i}" placeholder="Type your answer..." onkeydown="answerKeydown(event,${i})">
+    </div>
+  `).join("");
+  render(`
+    <div class="card card-gold">
+      ${diffTag}
+      <div class="category">${escapeHTML(questionCategory)}</div>
+      <div class="question-text">${escapeHTML(question)}</div>
+    </div>
+    <div class="card">
+      <label class="label">Your Answers</label>
+      ${inputsHTML}
+      <div class="center mt12"><button class="btn" onclick="submitAnswers()">SUBMIT ANSWERS</button></div>
+    </div>
+  `);
+}
+
+function renderResults() {
+  const scoresHTML = roundResults.scores.map(s => {
+    let badge = "";
+    if (s.score === 0) badge = `<span class="badge badge-pointless">POINTLESS!</span>`;
+    else if (s.score === 100) badge = `<span class="badge badge-wrong">WRONG</span>`;
+    const identifiedSpan = (s.identified_as && s.identified_as.toLowerCase() !== s.answer.toLowerCase())
+      ? `<span class="result-identified">(${escapeHTML(s.identified_as)})</span>` : "";
+    const verifiedSpan = s.api_verified
+      ? `<div class="result-verified verified-api">✓ API Verified</div>`
+      : `<div class="result-verified verified-claude">~ Claude scored</div>`;
+    return `<div class="result-row">
+      <div class="result-header">
+        <div><span class="result-player">${escapeHTML(s.player)}</span><span class="result-answer">"${escapeHTML(s.answer)}"</span>${identifiedSpan}</div>
+        <div class="result-score-wrap"><span class="result-score" style="color:${scoreTextColor(s.score)}">${s.score}</span>${badge}</div>
+      </div>
+      ${verifiedSpan}
+      <div class="result-reason">${escapeHTML(s.reason)}</div>
+      <div class="score-bar"><div class="score-bar-fill" style="width:${Math.max(s.score,2)}%;background:${scoreColor(s.score)}"></div></div>
+    </div>`;
+  }).join("");
+
+  let top5HTML = "";
+  if (roundResults.top5 && roundResults.top5.length > 0) {
+    top5HTML = `<div class="card"><label class="label">Pointless Answers You Could Have Given</label>` +
+      roundResults.top5.map(t => `<div class="top5-row">
+        <div style="flex:1"><span class="top5-name">${escapeHTML(t.answer)}</span><span class="top5-reason">${escapeHTML(t.reason)}</span></div>
+        <span class="top5-score">0–10</span>
+      </div>`).join("") + `</div>`;
+  }
+
+  const lb = getLeaderboard();
+  const lbHTML = lb.map(([name,total],i) => `
+    <div class="lb-row">
+      <div><span class="lb-medal">${i<3?medals[i]:(i+1)+"."}</span><span style="color:${i===0?"#c9a227":"#e0e0e0"}">${escapeHTML(name)}</span></div>
+      <span class="lb-total">${total}</span>
+    </div>`).join("");
+
+  const btnText = currentRound >= numRounds ? "SEE FINAL RESULTS" : "NEXT ROUND →";
+  render(`
+    <div class="card"><label class="label">Round ${currentRound} Results</label>${scoresHTML}</div>
+    ${top5HTML}
+    <div class="card"><label class="label">Leaderboard</label>${lbHTML}</div>
+    <div class="center mt16"><button class="btn" onclick="nextRound()">${btnText}</button></div>
+  `);
+}
+
+function renderEnd() {
+  hideRoundBadge();
+  const lb = getLeaderboard();
+  const finalHTML = lb.map(([name,total],i) => `
+    <div class="final-row">
+      <div><span class="final-medal">${i<3?medals[i]:(i+1)+"."}</span>
+      <span class="final-name" style="color:${i===0?"#c9a227":"#e0e0e0"};font-weight:${i===0?"bold":"normal"}">${escapeHTML(name)}</span></div>
+      <span class="final-total">${total}</span>
+    </div>`).join("");
+  render(`
+    <div class="card winner-card">
+      <div class="winner-trophy">🏆</div>
+      <div class="winner-name">${escapeHTML(lb[0][0])}</div>
+      <div class="winner-label">POINTLESS CHAMPION</div>
+      <div class="winner-score">${lb[0][1]} pts</div>
+    </div>
+    <div class="card"><label class="label">Final Standings</label>${finalHTML}</div>
+    <div class="center mt24"><button class="btn btn-big" onclick="playAgain()">PLAY AGAIN</button></div>
+  `);
+}
+
+/* ─── Actions ─── */
+function syncPlayerInputs() {
+  playerNames = playerNames.map((_,i) => { const el = document.getElementById("p"+i); return el ? el.value : playerNames[i]; });
+}
+function addPlayer() { syncPlayerInputs(); if (playerNames.length < 6) playerNames.push(""); renderSetup(); document.getElementById("p"+(playerNames.length-1)).focus(); }
+function removePlayer(i) { syncPlayerInputs(); if (playerNames.length > 1) playerNames.splice(i,1); renderSetup(); }
+function setRounds(n) { syncPlayerInputs(); numRounds = n; renderSetup(); }
+function setDifficulty(d) { syncPlayerInputs(); difficulty = d; renderSetup(); }
+function setupKeydown(e,i) { if (e.key==="Enter") { syncPlayerInputs(); if (playerNames.length<6) addPlayer(); } }
+function answerKeydown(e,i) { if (e.key==="Enter") { if (i+1<playerNames.length) document.getElementById("ans"+(i+1)).focus(); else submitAnswers(); } }
+
+function startGame() {
+  syncPlayerInputs();
+  const names = playerNames.map(n => sanitize(n)).filter(n => n.length > 0);
+  if (names.length === 0) return;
+  playerNames = names;
+  scores = {};
+  names.forEach(n => scores[n] = 0);
+  currentRound = 0;
+  lastQuestionType = "";
+  usedQuestions = [];
+  generateQuestion();
+}
+
+async function generateQuestion() {
+  hideError();
+  roundResults = null;
+  showRoundBadge("Round " + (currentRound+1) + " / " + numRounds);
+  renderSpinner("Generating question...");
+
+  const { template, meta } = buildQuestion();
+  const avoid = usedQuestions.length > 0
+    ? "Do NOT repeat or rephrase: " + usedQuestions.slice(-5).join(" | ") + ". "
+    : "";
+
+  const prompt = `You are a Premier League football quiz writer for the Pointless TV show.
+
+Turn this template into a clear, natural, well-worded question:
+TEMPLATE: ${template}
+
+${avoid}Keep all specific details (clubs, seasons, numbers) exactly as stated. Word it naturally.
+
+Reply ONLY JSON: {"question":"...","category":"2-3 word label"}`;
+
+  try {
+    const text = await callClaude(prompt, 512);
+    const parsed = grabJSON(text);
+    question = parsed.question;
+    questionCategory = parsed.category || "Premier League";
+    questionMeta = meta;
+    lastQuestionType = meta.type;
+    usedQuestions.push(question);
+    renderQuestion();
+  } catch(e) {
+    showError(e.message);
+    renderQuestion();
+  }
+}
+
+async function submitAnswers() {
+  const playerAnswers = playerNames.map((name,i) => {
+    const el = document.getElementById("ans"+i);
+    return { player: sanitize(name), answer: sanitize(el ? el.value : "") };
+  });
+  if (playerAnswers.some(p => !p.answer)) return;
+
+  hideError();
+  renderSpinner("Verifying answers...");
+
+  // Step 1: Football API validation
+  let validationResults = null;
+  try {
+    const payload = { ...questionMeta, answers: playerAnswers };
+    const result = await callValidate(payload);
+    if (!result.fallback && !result.error && result.answers) {
+      validationResults = result.answers;
+    }
+  } catch(e) {
+    // silent fallback to Claude
+  }
+
+  renderSpinner("Scoring answers...");
+
+  // Step 2: Claude familiarity scoring
+  let claudeContext = "";
+  if (validationResults) {
+    const lines = validationResults.map(v => {
+      if (v.valid === true) return `${v.player} answered "${v.answer}" → CORRECT (${v.identified_as}): ${v.reason}`;
+      if (v.valid === false) return `${v.player} answered "${v.answer}" → WRONG: ${v.reason}`;
+      return `${v.player} answered "${v.answer}" → UNVERIFIED by API, use your knowledge`;
+    });
+    claudeContext = "\nAPI VERIFICATION:\n" + lines.join("\n") + "\n";
+  }
+
+  const answersStr = playerAnswers.map(p => `${p.player}: "${p.answer}"`).join(", ");
+
+  const prompt = `You are scoring a Pointless Premier League Quiz round.
+
+QUESTION: "${sanitize(question)}"
+ANSWERS: ${answersStr}
+${claudeContext}
+${validationResults ? "The Football API has verified correct/wrong above. For CORRECT answers, assign a familiarity score. For WRONG answers, set score=100. For UNVERIFIED, use your football knowledge." : "No API data — verify and score each answer using your football knowledge."}
+
+SCORING — imagine 1000 Premier League fans asked this exact question. What % would name this player?
+That percentage IS the score (0-99 for correct, 100 for wrong).
+
+0 = Almost nobody names them for this question
+1-15 = Very few fans would think of them
+16-40 = Some dedicated fans would name them  
+41-70 = Many fans would name them
+71-99 = Most fans would name them for this question
+100 = WRONG — does not meet the criteria
+
+Key rules:
+- Famous players score LOW if they are unexpected answers for this specific question
+- Obscure players score LOW because few would think of them
+- Accept surnames and misspellings — identify the intended player, record as identified_as
+- Loan spells count as playing for a club
+- Correct nationalities: Mahrez=Algerian, Salah=Egyptian, Zaha=Ivorian, Kante=French
+
+Also give 5 obscure correct answers (score 0-10) you are certain about.
+
+Reply ONLY JSON: {"scores":[{"player":"","answer":"","identified_as":"","score":0,"reason":""}],"top5":[{"answer":"","reason":""}]}`;
+
+  try {
+    const text = await callClaude(prompt, 1200);
+    const parsed = grabJSON(text);
+
+    parsed.scores.forEach(s => {
+      if (validationResults) {
+        const apiResult = validationResults.find(v => v.player === s.player);
+        if (apiResult) {
+          s.api_verified = apiResult.valid === true;
+          if (apiResult.valid === true) {
+            s.identified_as = apiResult.identified_as || s.identified_as || s.answer;
+          }
+          if (apiResult.valid === false) {
+            s.score = 100;
+            s.reason = apiResult.reason;
+            s.api_verified = true;
+          }
+        }
+      }
+      if (scores[s.player] !== undefined) scores[s.player] += s.score;
+    });
+
+    roundResults = parsed;
+    currentRound++;
+    showRoundBadge("Round " + currentRound + " / " + numRounds);
+    renderResults();
+  } catch(e) {
+    showError(e.message);
+    renderQuestion();
+  }
+}
+
+function nextRound() {
+  if (currentRound >= numRounds) renderEnd();
+  else generateQuestion();
+}
+
+function playAgain() {
+  playerNames = [""]; numRounds = 5; difficulty = "medium";
+  currentRound = 0; lastQuestionType = "";
+  scores = {}; question = null; questionMeta = {};
+  roundResults = null; usedQuestions = [];
+  hideError(); renderSetup();
+}
+
+renderSetup();
+</script>
+</body>
+</html>
